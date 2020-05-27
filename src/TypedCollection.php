@@ -48,7 +48,7 @@ class TypedCollection extends BaseCollection
 
     /**
      * Check that item are the same type as collection requires
-     * @param $item
+     * @param mixed $item
      * @return bool
      */
     protected function checkType($item): bool
@@ -88,7 +88,7 @@ class TypedCollection extends BaseCollection
     }
 
     /** {@inheritDoc} */
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value): void
     {
         $this->checkType($value);
         parent::offsetSet($offset, $value);

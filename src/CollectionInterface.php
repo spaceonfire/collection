@@ -8,14 +8,22 @@ use ArrayAccess;
 use Closure;
 use Countable;
 use IteratorAggregate;
+use JsonSerializable;
+use spaceonfire\Criteria\FilterableInterface;
 
-interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate
+interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate, JsonSerializable, FilterableInterface
 {
     /**
      * Get all of the items in the collection.
      * @return array
      */
     public function all(): array;
+
+    /**
+     * Clear collection
+     * @return $this
+     */
+    public function clear(): self;
 
     /**
      * Execute a callback over each item.
@@ -29,7 +37,7 @@ interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate
      * @param callable|null $callback the callback function to decide which items to remove.
      * @return CollectionInterface
      */
-    public function filter(callable $callback = null);
+    public function filter(?callable $callback = null);
 
     /**
      * Find item in the collection
@@ -63,7 +71,7 @@ interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate
     /**
      * Calculate the median value of items in the collection
      * @param mixed $field the name of the field to calculate.
-     * @return int|float the calculated median value. `null` if the collection is empty.
+     * @return int|float|null the calculated median value. `null` if the collection is empty.
      */
     public function median($field = null);
 
@@ -148,7 +156,7 @@ interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate
      *     `SORT_FLAG_CASE`. Please refer to the [PHP
      *     manual](http://php.net/manual/en/function.sort.php) for more details. When sorting by
      *     multiple keys with different sort flags, use an array of sort flags.
-     * @return static a new collection containing the sorted items.
+     * @return CollectionInterface a new collection containing the sorted items.
      */
     public function sortBy($key, $direction = SORT_ASC, $sortFlag = SORT_REGULAR);
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace spaceonfire\Collection;
 
 use Closure;
@@ -14,15 +16,15 @@ class ArrayHelper
      * @param string $prefix Key prefix, mostly needed for recursive call
      * @return array single-dimensional array
      */
-    public static function flatten(array $array, $separator = '.', $prefix = ''): array
+    public static function flatten(array $array, string $separator = '.', string $prefix = ''): array
     {
         $result = [];
         foreach ($array as $key => $item) {
             $prefixedKey = ($prefix ? $prefix . $separator : '') . $key;
 
             if (static::isArrayAssoc($item)) {
-                $childFlaten = self::flatten($item, $separator, $prefixedKey);
-                foreach ($childFlaten as $childKey => $childValue) {
+                $childFlatten = self::flatten($item, $separator, $prefixedKey);
+                foreach ($childFlatten as $childKey => $childValue) {
                     $result[$childKey] = $childValue;
                 }
             } else {
@@ -44,7 +46,7 @@ class ArrayHelper
         }
 
         $i = 0;
-        foreach ($var as $k => $v) {
+        foreach ($var as $k => $_) {
             if ('' . $k !== '' . $i) {
                 return true;
             }
@@ -60,15 +62,17 @@ class ArrayHelper
      * @param string $separator Glue string for exploding keys
      * @return array multi-dimensional array
      */
-    public static function unflatten(array $array, $separator = '.'): array
+    public static function unflatten(array $array, string $separator = '.'): array
     {
-        $nestedKeys = array_filter(array_keys($array), function ($key) use ($separator) {
-            return strpos($key, $separator) !== false;
+        /** @var string[] $nestedKeys */
+        $nestedKeys = array_filter(array_keys($array), static function ($key) use ($separator) {
+            return strpos((string)$key, $separator) !== false;
         });
         if (!count($nestedKeys)) {
             return $array;
         }
         foreach ($nestedKeys as $key) {
+            /** @var string[] $prefix */
             $prefix = explode($separator, $key);
             $field = array_pop($prefix);
             $prefix = implode($separator, $prefix);
@@ -164,7 +168,7 @@ class ArrayHelper
      * if the path is null then `$array` will be assigned the `$value`
      * @param mixed $value the value to be written
      */
-    public static function setValue(&$array, $path, $value)
+    public static function setValue(&$array, $path, $value): void
     {
         if ($path === null) {
             $array = $value;
@@ -275,7 +279,7 @@ class ArrayHelper
      * ```
      *
      * @param array|object $array array or object to extract value from
-     * @param string|Closure|array $key key name of the array element, an array of keys or property name of the object,
+     * @param string|int|Closure|array $key key name of the array element, an array of keys or property name of the object,
      * or an anonymous function returning the value. The anonymous function signature should be:
      * `function($array, $defaultValue)`.
      * @param mixed $default the default value to be returned if the specified array key does not exist. Not used when
@@ -312,7 +316,7 @@ class ArrayHelper
         }
 
         if (is_array($array)) {
-            return (isset($array[$key]) || array_key_exists($key, $array)) ? $array[$key] : $default;
+            return isset($array[$key]) || array_key_exists($key, $array) ? $array[$key] : $default;
         }
 
         return $default;
@@ -334,7 +338,7 @@ class ArrayHelper
      * @throws InvalidArgumentException if the $direction or $sortFlag parameters do not have
      * correct number of elements as that of $key.
      */
-    public static function multisort(&$array, $key, $direction = SORT_ASC, $sortFlag = SORT_REGULAR)
+    public static function multisort(&$array, $key, $direction = SORT_ASC, $sortFlag = SORT_REGULAR): void
     {
         $keys = is_array($key) ? $key : [$key];
         if (empty($keys) || empty($array)) {

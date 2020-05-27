@@ -6,6 +6,8 @@ namespace spaceonfire\Collection;
 
 use BadMethodCallException;
 use PHPUnit\Framework\TestCase;
+use spaceonfire\Criteria\Criteria;
+use stdClass;
 
 class CollectionTest extends TestCase
 {
@@ -20,6 +22,13 @@ class CollectionTest extends TestCase
         $first = new Collection([1, 2, 3]);
         $second = new Collection($first);
         $this->assertEquals($first->all(), $second->all());
+    }
+
+    public function testClear(): void
+    {
+        $collection = new Collection([1, 2, 3]);
+        $collection->clear();
+        $this->assertEquals([], $collection->all());
     }
 
     public function testSum()
@@ -226,6 +235,27 @@ class CollectionTest extends TestCase
     {
         $collection = new Collection([1, '2', 3]);
         $this->assertEquals([1 => '2', 2 => 3], $collection->slice(1)->all());
+    }
+
+    public function testMatching()
+    {
+        $items = array_map(static function ($val) {
+            $object = new stdClass();
+            $object->value = $val;
+            return $object;
+        }, range(0, 100));
+        $collection = new Collection($items);
+
+        $criteria = new Criteria(
+            Criteria::expr()->property('value', Criteria::expr()->greaterThan(25)),
+            ['value' => SORT_DESC],
+            0,
+            25
+        );
+
+        $result = $collection->matching($criteria);
+
+        $this->assertCount(25, $result);
     }
 
     public function testUnique()
