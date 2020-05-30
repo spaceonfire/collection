@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace spaceonfire\Collection;
 
+use InvalidArgumentException;
 use RuntimeException;
+use spaceonfire\Collection\Types\Type;
+use spaceonfire\Collection\Types\TypeFactory;
 use stdClass;
 
 /**
@@ -28,57 +31,55 @@ use stdClass;
  *
  * @package spaceonfire\Collection
  */
-class TypedCollection extends BaseCollection
+class TypedCollection extends AbstractCollectionDecorator
 {
     /**
-     * @var string
+     * @var Type
      */
     protected $type;
 
     /**
      * TypedCollection constructor.
-     * @param array $items
-     * @param string $type Scalar type name or Full qualified name of object class
+     * @param array|iterable|mixed $items
+     * @param Type|string $type Scalar type name or Full qualified name of object class
      */
-    public function __construct($items = [], string $type = stdClass::class)
+    public function __construct($items = [], $type = stdClass::class)
     {
+        if (!$type instanceof Type) {
+            if (!is_string($type)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Argument $type expected to be a string or an instance of %s. Got: %s',
+                    Type::class,
+                    gettype($type)
+                ));
+            }
+
+            $type = TypeFactory::create($type);
+        }
+
         $this->type = $type;
+
         parent::__construct($items);
+
+        foreach ($this->collection as $item) {
+            $this->checkType($item);
+        }
     }
 
     /**
      * Check that item are the same type as collection requires
      * @param mixed $item
-     * @return bool
+     * @return void
      */
-    protected function checkType($item): bool
+    private function checkType($item): void
     {
-        $type = gettype($item);
-
-        if ($type === 'object' && !class_exists($this->type) && !interface_exists($this->type)) {
-            throw new RuntimeException('Class ' . $this->type . ' does not exist');
-        }
-
-        if (($type === 'object' && !($item instanceof $this->type)) ||
-            ($type !== 'object' && $type !== $this->type)) {
+        if (!$this->type->assert($item)) {
             throw new RuntimeException(static::class . ' accept only instances of ' . $this->type);
         }
-
-        return true;
     }
 
     /** {@inheritDoc} */
-    protected function getItems($items): array
-    {
-        $result = parent::getItems($items);
-        foreach ($result as $item) {
-            $this->checkType($item);
-        }
-        return $result;
-    }
-
-    /** {@inheritDoc} */
-    protected function newStatic(array $items = []): CollectionInterface
+    protected function newStatic($items): CollectionInterface
     {
         if (static::class === __CLASS__) {
             return new static($items, $this->type);
@@ -92,15 +93,6 @@ class TypedCollection extends BaseCollection
     {
         $this->checkType($value);
         parent::offsetSet($offset, $value);
-    }
-
-    /**
-     * Converts current collection to lower level collection without type check
-     * @return CollectionInterface
-     */
-    public function downgrade(): CollectionInterface
-    {
-        return new Collection($this->all());
     }
 
     /** {@inheritDoc} */
@@ -125,12 +117,6 @@ class TypedCollection extends BaseCollection
     }
 
     /** {@inheritDoc} */
-    public function indexBy($key)
-    {
-        return $this->newStatic(parent::indexBy($key)->all());
-    }
-
-    /** {@inheritDoc} */
     public function groupBy($groupField, $preserveKeys = true)
     {
         return $this->downgrade()
@@ -150,10 +136,10 @@ class TypedCollection extends BaseCollection
     }
 
     /** {@inheritDoc} */
-    public function replace($item, $replacement, $strict = true)
+    public function replace($item, $replacement, bool $strict = false)
     {
         $this->checkType($item);
         $this->checkType($replacement);
-        return $this->newStatic(parent::replace($item, $replacement, $strict)->all());
+        return parent::replace($item, $replacement, $strict);
     }
 }

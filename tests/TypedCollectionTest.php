@@ -9,6 +9,12 @@ use RuntimeException;
 
 class TypedCollectionTest extends TestCase
 {
+    public function testConstructWithInvalidType()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        new TypedCollection([], 111);
+    }
+
     public function testScalar()
     {
         new TypedCollection([0, 1, 2], 'integer');

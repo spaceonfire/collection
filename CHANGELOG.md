@@ -25,6 +25,9 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 ## UNRELEASED
 ### Added
 - Implement FilterableInterface from `spaceonfire/criteria` by collection
+- Base collection decorator implementation
+- `TypedCollection` acts as decorator
+- More options for type check in `TypedCollection`
 
 ## [1.3.0] - 2020-03-07
 ### Added
@@ -52,7 +55,7 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 
 ## [1.2.0] - 2019-11-08
 ### Added
-- Huge update for `TypedCollection`:
+- A huge update for `TypedCollection`:
     - check type on item add to collection
     - add `downgrade` method that returns simple `Collection` instance
     - override some methods witch logic requires downgrade, restore original `TypedCollection` when we can
