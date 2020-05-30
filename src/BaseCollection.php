@@ -6,7 +6,6 @@ namespace spaceonfire\Collection;
 
 use ArrayIterator;
 use BadMethodCallException;
-use Closure;
 use InvalidArgumentException;
 use JsonSerializable;
 use RuntimeException;
@@ -103,7 +102,7 @@ abstract class BaseCollection implements CollectionInterface
 
     /**
      * Calculate the sum of a field of the models in the collection.
-     * @param string|Closure|array|null $field the name of the field to calculate.
+     * @param string|callable|array|null $field the name of the field to calculate.
      * This will be passed to [[ArrayHelper::getValue()]].
      * @return int|float the calculated sum.
      */
@@ -166,7 +165,7 @@ abstract class BaseCollection implements CollectionInterface
 
     /**
      * Calculate the maximum value of a field of the models in the collection.
-     * @param string|Closure|array $field the name of the field to calculate.
+     * @param string|callable|array $field the name of the field to calculate.
      * This will be passed to [[ArrayHelper::getValue()]].
      * @return int|float|null the calculated maximum value. `null` if the collection is empty.
      */
@@ -189,7 +188,7 @@ abstract class BaseCollection implements CollectionInterface
 
     /**
      * Calculate the minimum value of a field of the models in the collection
-     * @param string|Closure|array $field the name of the field to calculate.
+     * @param string|callable|array $field the name of the field to calculate.
      * This will be passed to [[ArrayHelper::getValue()]].
      * @return int|float|null the calculated minimum value. `null` if the collection is empty.
      */
@@ -393,7 +392,7 @@ abstract class BaseCollection implements CollectionInterface
      */
     public function contains($item, bool $strict = false): bool
     {
-        if ($item instanceof Closure) {
+        if (is_callable($item)) {
             $test = $item;
         } else {
             $test = static function ($i) use ($strict, $item) {
@@ -418,7 +417,7 @@ abstract class BaseCollection implements CollectionInterface
      */
     public function remove($item, bool $strict = false)
     {
-        if ($item instanceof Closure) {
+        if (is_callable($item)) {
             $fun = static function ($i) use ($item) {
                 return !$item($i);
             };

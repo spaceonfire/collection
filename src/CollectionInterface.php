@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace spaceonfire\Collection;
 
 use ArrayAccess;
-use Closure;
 use Countable;
 use IteratorAggregate;
 use JsonSerializable;
@@ -156,7 +155,7 @@ interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate,
 
     /**
      * Sort collection data by one or multiple values.
-     * @param string|Closure|array $key the key(s) to be sorted by. This refers to a key name of
+     * @param string|callable|array $key the key(s) to be sorted by. This refers to a key name of
      *     the sub-array elements, a property name of the objects, or an anonymous function
      *     returning the values for comparison purpose. The anonymous function signature should be:
      *     `function($item)`. To sort by multiple keys, provide an array of keys here.
@@ -209,26 +208,26 @@ interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate,
      * Builds a map (key-value pairs) from a multidimensional array or an array of objects.
      * The `$from` and `$to` parameters specify the key names or property names to set up the map.
      *
-     * @param string|Closure $from the field of the item to use as the key of the created map.
-     * This can be a closure that returns such a value.
-     * @param string|Closure $to the field of the item to use as the value of the created map.
-     * This can be a closure that returns such a value.
+     * @param string|callable $from the field of the item to use as the key of the created map.
+     * This can be a callable that returns such a value.
+     * @param string|callable $to the field of the item to use as the value of the created map.
+     * This can be a callable that returns such a value.
      * @return CollectionInterface
      */
     public function remap($from, $to);
 
     /**
      * Assign a new key to each item in the collection.
-     * @param string|Closure $key the field of the item to use as the new key.
-     * This can be a closure that returns such a value.
+     * @param string|callable $key the field of the item to use as the new key.
+     * This can be a callable that returns such a value.
      * @return CollectionInterface
      */
     public function indexBy($key);
 
     /**
      * Group items by a specified field.
-     * @param string|Closure $groupField the field of the item to use as the group value.
-     * This can be a closure that returns such a value.
+     * @param string|callable $groupField the field of the item to use as the group value.
+     * This can be a callable that returns such a value.
      * @param bool $preserveKeys whether to preserve item keys in the groups. Defaults to `true`.
      * @return CollectionInterface
      */
@@ -236,8 +235,8 @@ interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate,
 
     /**
      * Check whether the collection contains a specific item.
-     * @param mixed|Closure $item the item to search for. You may also pass a closure that returns a boolean. The
-     *     closure will be called on each item and in case it returns `true`, the item will be considered to be found.
+     * @param mixed|callable $item the item to search for. You may also pass a callable that returns a boolean. The
+     *     callable will be called on each item and in case it returns `true`, the item will be considered to be found.
      * @param bool $strict whether comparison should be compared strict (`===`) or not (`==`). Defaults to `false`.
      * @return bool `true` if the collection contains at least one item that matches, `false` if not.
      */
@@ -245,8 +244,8 @@ interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate,
 
     /**
      * Remove a specific item from the collection.
-     * @param mixed|Closure $item the item to search for. You may also pass a closure that returns a boolean. The
-     *     closure will be called on each item and in case it returns `true`, the item will be removed.
+     * @param mixed|callable $item the item to search for. You may also pass a callable that returns a boolean. The
+     *     callable will be called on each item and in case it returns `true`, the item will be removed.
      * @param bool $strict whether comparison should be compared strict (`===`) or not (`==`). Defaults to `false`.
      * @return CollectionInterface
      * @see filter()

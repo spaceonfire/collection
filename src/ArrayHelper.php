@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace spaceonfire\Collection;
 
 use ArrayAccess;
-use Closure;
 use InvalidArgumentException;
 use Webmozart\Assert\Assert;
 
@@ -231,9 +230,9 @@ class ArrayHelper
      * ```
      *
      * @param array $array
-     * @param string|Closure $from
-     * @param string|Closure $to
-     * @param string|Closure $group
+     * @param string|callable $from
+     * @param string|callable $to
+     * @param string|callable $group
      * @return array
      */
     public static function map($array, $from, $to, $group = null)
@@ -283,8 +282,8 @@ class ArrayHelper
      * ```
      *
      * @param array|object $array array or object to extract value from
-     * @param string|int|Closure|array $key key name of the array element, an array of keys or property name of the object,
-     * or an anonymous function returning the value. The anonymous function signature should be:
+     * @param string|int|callable|array $key key name of the array element, an array of keys or property name of the
+     *     object, or an anonymous function returning the value. The anonymous function signature should be:
      * `function($array, $defaultValue)`.
      * @param mixed $default the default value to be returned if the specified array key does not exist. Not used when
      * getting value from an object.
@@ -292,7 +291,7 @@ class ArrayHelper
      */
     public static function getValue($array, $key, $default = null)
     {
-        if ($key instanceof Closure) {
+        if (is_callable($key)) {
             return $key($array, $default);
         }
 
@@ -337,7 +336,7 @@ class ArrayHelper
     /**
      * Sorts an array of objects or arrays (with the same structure) by one or several keys.
      * @param array $array the array to be sorted. The array will be modified after calling this method.
-     * @param string|Closure|string[] $key the key(s) to be sorted by. This refers to a key name of the sub-array
+     * @param string|callable|string[] $key the key(s) to be sorted by. This refers to a key name of the sub-array
      * elements, a property name of the objects, or an anonymous function returning the values for comparison
      * purpose. The anonymous function signature should be: `function($item)`.
      * To sort by multiple keys, provide an array of keys here.
@@ -401,7 +400,7 @@ class ArrayHelper
      * ```
      *
      * @param array $array
-     * @param int|string|Closure $name
+     * @param int|string|callable $name
      * @param bool $keepKeys
      * @return array
      */
