@@ -23,7 +23,7 @@ abstract class AbstractCollectionDecorator implements CollectionInterface
 
     /**
      * AbstractCollectionDecorator constructor.
-     * @param array|iterable|mixed $items
+     * @param CollectionInterface|array|iterable|mixed $items
      */
     public function __construct($items)
     {

@@ -28,6 +28,7 @@ Updates should follow the [Keep a CHANGELOG](http://keepachangelog.com/) princip
 - Base collection decorator implementation
 - `TypedCollection` acts as decorator
 - More options for type check in `TypedCollection`
+- New `IndexedCollection` decorator
 
 ## [1.3.0] - 2020-03-07
 ### Added

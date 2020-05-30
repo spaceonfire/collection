@@ -40,11 +40,13 @@ class TypedCollection extends AbstractCollectionDecorator
 
     /**
      * TypedCollection constructor.
-     * @param array|iterable|mixed $items
+     * @param CollectionInterface|array|iterable|mixed $items
      * @param Type|string $type Scalar type name or Full qualified name of object class
      */
     public function __construct($items = [], $type = stdClass::class)
     {
+        // TODO: trigger error if class extended
+
         if (!$type instanceof Type) {
             if (!is_string($type)) {
                 throw new InvalidArgumentException(sprintf(

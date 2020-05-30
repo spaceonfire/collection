@@ -63,7 +63,7 @@ class TypedCollectionTest extends TestCase
     {
         $collection = new TypedCollection($this->getObjectsArray(), \stdClass::class);
         $downgrade = $collection->downgrade();
-        $this->assertNotEquals(TypedCollection::class, get_class($downgrade));
+        self::assertNotEquals(TypedCollection::class, get_class($downgrade));
     }
 
     public function testKeys()
@@ -73,7 +73,7 @@ class TypedCollectionTest extends TestCase
             'two' => 2,
         ], 'integer');
 
-        $this->assertEquals(['one', 'two'], $collection->keys()->all());
+        self::assertEquals(['one', 'two'], $collection->keys()->all());
     }
 
     public function testFlip()
@@ -85,8 +85,8 @@ class TypedCollectionTest extends TestCase
 
         $flipped = $collection->flip();
 
-        $this->assertNotEquals(TypedCollection::class, get_class($flipped));
-        $this->assertEquals([1 => 'one', 2 => 'two'], $flipped->all());
+        self::assertNotEquals(TypedCollection::class, get_class($flipped));
+        self::assertEquals([1 => 'one', 2 => 'two'], $flipped->all());
     }
 
     public function testRemap()
@@ -98,8 +98,8 @@ class TypedCollectionTest extends TestCase
 
         $remapped = $collection->remap('id', 'value');
 
-        $this->assertNotEquals(TypedCollection::class, get_class($remapped));
-        $this->assertEquals([
+        self::assertNotEquals(TypedCollection::class, get_class($remapped));
+        self::assertEquals([
             'user-1' => 'John Doe',
             'user-2' => 'Jane Doe',
         ], $remapped->all());
@@ -113,9 +113,9 @@ class TypedCollectionTest extends TestCase
         ], 'array');
         $indexed = $collection->indexBy('id');
 
-        $this->assertInstanceOf(TypedCollection::class, $indexed);
-        $this->assertArrayHasKey('user-1', $indexed->all());
-        $this->assertArrayHasKey('user-2', $indexed->all());
+        self::assertInstanceOf(TypedCollection::class, $indexed);
+        self::assertArrayHasKey('user-1', $indexed->all());
+        self::assertArrayHasKey('user-2', $indexed->all());
     }
 
     public function testGroupBy()
@@ -129,10 +129,10 @@ class TypedCollectionTest extends TestCase
 
         $groupedCollection = $collection->groupBy('group');
 
-        $this->assertArrayHasKey('group-1', $groupedCollection->all());
-        $this->assertArrayHasKey('group-2', $groupedCollection->all());
-        $this->assertInstanceOf(TypedCollection::class, $groupedCollection['group-1']);
-        $this->assertInstanceOf(TypedCollection::class, $groupedCollection['group-2']);
+        self::assertArrayHasKey('group-1', $groupedCollection->all());
+        self::assertArrayHasKey('group-2', $groupedCollection->all());
+        self::assertInstanceOf(TypedCollection::class, $groupedCollection['group-1']);
+        self::assertInstanceOf(TypedCollection::class, $groupedCollection['group-2']);
     }
 
     public function testMap()
@@ -141,14 +141,14 @@ class TypedCollectionTest extends TestCase
         $multiplied = $collection->map(static function ($item) {
             return $item * $item;
         });
-        $this->assertNotEquals(TypedCollection::class, get_class($multiplied));
-        $this->assertEquals([1, 4, 9], $multiplied->all());
+        self::assertNotEquals(TypedCollection::class, get_class($multiplied));
+        self::assertEquals([1, 4, 9], $multiplied->all());
     }
 
     public function testReplace()
     {
         $collection = new TypedCollection([1, 2, 3], 'integer');
-        $this->assertEquals([1, 5, 3], $collection->replace(2, 5)->all());
+        self::assertEquals([1, 5, 3], $collection->replace(2, 5)->all());
     }
 
     public function testReplaceException()
@@ -160,14 +160,13 @@ class TypedCollectionTest extends TestCase
 
     public function testExtendTypedCollection()
     {
-        $collection = new class([1, 2, 3]) extends TypedCollection
-        {
+        $collection = new class([1, 2, 3]) extends TypedCollection {
             public function __construct($items = [])
             {
                 parent::__construct($items, 'integer');
             }
         };
-        $this->assertEquals([1, 5, 3], $collection->replace(2, 5)->all());
+        self::assertEquals([1, 5, 3], $collection->replace(2, 5)->all());
     }
 
     protected function getObjectsArray(int $times = 3): array

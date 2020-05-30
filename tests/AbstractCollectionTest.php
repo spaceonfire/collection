@@ -16,27 +16,85 @@ abstract class AbstractCollectionTest extends TestCase
     public function testFromArray()
     {
         $collection = $this->factory([1, 2, 3]);
-        $this->assertEquals([1, 2, 3], $collection->all());
+        self::assertEquals([1, 2, 3], $collection->all());
     }
 
     public function testFromOtherCollection()
     {
         $first = $this->factory([1, 2, 3]);
         $second = $this->factory($first);
-        $this->assertEquals($first->all(), $second->all());
+        self::assertEquals($first->all(), $second->all());
+    }
+
+    public function testFromJsonSerializable()
+    {
+        $json = new class implements \JsonSerializable {
+            /**
+             * @inheritDoc
+             */
+            public function jsonSerialize()
+            {
+                return [
+                    'one' => 1,
+                    'two' => 2,
+                ];
+            }
+        };
+        $collection = $this->factory($json);
+        self::assertEquals(['one' => 1, 'two' => 2], $collection->all());
+    }
+
+    public function testFromObject()
+    {
+        $object = (object)['one' => 1, 'two' => 2];
+        $collection = $this->factory($object);
+        self::assertEquals(['one' => 1, 'two' => 2], $collection->all());
     }
 
     public function testClear(): void
     {
         $collection = $this->factory([1, 2, 3]);
         $collection->clear();
-        $this->assertEquals([], $collection->all());
+        self::assertEquals([], $collection->all());
+    }
+
+    public function testEach(): void
+    {
+        $collection = $this->factory([1, 2, 3]);
+        $callsCounter = 0;
+
+        $collection->each(static function () use (&$callsCounter) {
+            $callsCounter++;
+        });
+        self::assertEquals(3, $callsCounter);
+
+        $callsCounter = 0;
+
+        $collection->each(static function ($val) use (&$callsCounter) {
+            $callsCounter++;
+
+            if ($val === 2) {
+                return false;
+            }
+
+            return null;
+        });
+        self::assertEquals(2, $callsCounter);
+    }
+
+    public function testReduce()
+    {
+        $collection = $this->factory([1, 2, 3]);
+
+        self::assertEquals(6, $collection->reduce(static function ($accum, $val) {
+            return $accum * $val;
+        }, 1));
     }
 
     public function testSum()
     {
         $collection = $this->factory([1, 2, 3]);
-        $this->assertEquals(6, $collection->sum());
+        self::assertEquals(6, $collection->sum());
     }
 
     public function testSumException()
@@ -53,13 +111,13 @@ abstract class AbstractCollectionTest extends TestCase
             ['field' => 2],
             ['field' => 3],
         ]);
-        $this->assertEquals(6, $collection->sum('field'));
+        self::assertEquals(6, $collection->sum('field'));
     }
 
     public function testMax()
     {
         $collection = $this->factory([1, 2, 3]);
-        $this->assertEquals(3, $collection->max());
+        self::assertEquals(3, $collection->max());
     }
 
     public function testMaxException()
@@ -76,13 +134,13 @@ abstract class AbstractCollectionTest extends TestCase
             ['field' => 2],
             ['field' => 3],
         ]);
-        $this->assertEquals(3, $collection->max('field'));
+        self::assertEquals(3, $collection->max('field'));
     }
 
     public function testMin()
     {
         $collection = $this->factory([1, 2, -3]);
-        $this->assertEquals(-3, $collection->min());
+        self::assertEquals(-3, $collection->min());
     }
 
     public function testMinException()
@@ -99,15 +157,95 @@ abstract class AbstractCollectionTest extends TestCase
             ['field' => 2],
             ['field' => -3],
         ]);
-        $this->assertEquals(-3, $collection->min('field'));
+        self::assertEquals(-3, $collection->min('field'));
     }
 
     public function testIsEmpty()
     {
         $collection = $this->factory([1, 2, -3]);
-        $this->assertFalse($collection->isEmpty());
+        self::assertFalse($collection->isEmpty());
         $collection = $this->factory();
-        $this->assertTrue($collection->isEmpty());
+        self::assertTrue($collection->isEmpty());
+    }
+
+    public function testMap(): void
+    {
+        $collection = $this->factory([1, 3, 2]);
+
+        self::assertEquals([2, 6, 4], $collection->map(static function ($val) {
+            return $val * 2;
+        })->all());
+    }
+
+    public function testSort(): void
+    {
+        $collection = $this->factory([1, 3, 2]);
+        self::assertEquals([1, 2, 3], $collection->sort()->values()->all());
+        self::assertEquals([3, 2, 1], $collection->sort(SORT_DESC)->values()->all());
+    }
+
+    public function testSortByKey(): void
+    {
+        $collection = $this->factory(['a' => 1, 'c' => 3, 'b' => 2]);
+        self::assertEquals(['a' => 1, 'b' => 2, 'c' => 3], $collection->sortByKey()->all());
+        self::assertEquals(['c' => 3, 'b' => 2, 'a' => 1], $collection->sortByKey(SORT_DESC)->all());
+    }
+
+    public function testSortNatural(): void
+    {
+        $collection = $this->factory(['IMG0.png', 'img12.png', 'img10.png', 'img2.png', 'img1.png', 'IMG3.png']);
+        self::assertEquals(
+            ['IMG0.png', 'img1.png', 'img2.png', 'IMG3.png', 'img10.png', 'img12.png'],
+            $collection->sortNatural()->values()->all()
+        );
+        self::assertEquals(
+            ['IMG0.png', 'IMG3.png', 'img1.png', 'img2.png', 'img10.png', 'img12.png'],
+            $collection->sortNatural(true)->values()->all()
+        );
+    }
+
+    public function testSortBy(): void
+    {
+        $collection = $this->factory([
+            ['id' => 'user-4', 'value' => 'Janifer Doe'],
+            ['id' => 'user-1', 'value' => 'John Doe'],
+            ['id' => 'user-3', 'value' => 'Johnson Doe'],
+            ['id' => 'user-2', 'value' => 'Jane Doe'],
+        ]);
+
+        self::assertEquals(
+            [
+                ['id' => 'user-1', 'value' => 'John Doe'],
+                ['id' => 'user-2', 'value' => 'Jane Doe'],
+                ['id' => 'user-3', 'value' => 'Johnson Doe'],
+                ['id' => 'user-4', 'value' => 'Janifer Doe'],
+            ],
+            $collection->sortBy('id')->values()->all()
+        );
+    }
+
+    public function testReverse()
+    {
+        $collection = $this->factory([1, 2, 3]);
+        self::assertEquals([3, 2, 1], array_values($collection->reverse()->all()));
+    }
+
+    public function testValues()
+    {
+        $collection = $this->factory(['a' => 1, 'b' => 2, 'c' => 3]);
+        self::assertEquals([1, 2, 3], $collection->values()->all());
+    }
+
+    public function testKeys()
+    {
+        $collection = $this->factory(['a' => 1, 'b' => 2, 'c' => 3]);
+        self::assertEquals(['a', 'b', 'c'], $collection->keys()->all());
+    }
+
+    public function testFlip()
+    {
+        $collection = $this->factory(['a' => 1, 'b' => 2, 'c' => 3]);
+        self::assertEquals([1 => 'a', 2 => 'b', 3 => 'c'], $collection->flip()->all());
     }
 
     public function testMerge()
@@ -118,7 +256,7 @@ abstract class AbstractCollectionTest extends TestCase
         ]);
         $second = $this->factory([10, 20, 30]);
         $result = $first->merge($second, [['field' => 1]]);
-        $this->assertEquals([
+        self::assertEquals([
             'one' => 1,
             'two' => 2,
             10,
@@ -134,7 +272,7 @@ abstract class AbstractCollectionTest extends TestCase
             ['id' => 'user-1', 'value' => 'John Doe'],
             ['id' => 'user-2', 'value' => 'Jane Doe'],
         ]);
-        $this->assertEquals([
+        self::assertEquals([
             'user-1' => 'John Doe',
             'user-2' => 'Jane Doe',
         ], $collection->remap('id', 'value')->all());
@@ -147,8 +285,8 @@ abstract class AbstractCollectionTest extends TestCase
             ['id' => 'user-2', 'value' => 'Jane Doe'],
         ]);
         $items = $collection->indexBy('id')->all();
-        $this->assertArrayHasKey('user-1', $items);
-        $this->assertArrayHasKey('user-2', $items);
+        self::assertArrayHasKey('user-1', $items);
+        self::assertArrayHasKey('user-2', $items);
     }
 
     public function testGroupBy()
@@ -162,29 +300,29 @@ abstract class AbstractCollectionTest extends TestCase
 
         $groupedCollection = $collection->groupBy('group');
 
-        $this->assertArrayHasKey('group-1', $groupedCollection->all());
-        $this->assertArrayHasKey('group-2', $groupedCollection->all());
-        $this->assertInstanceOf(Collection::class, $groupedCollection['group-1']);
-        $this->assertInstanceOf(Collection::class, $groupedCollection['group-2']);
+        self::assertArrayHasKey('group-1', $groupedCollection->all());
+        self::assertArrayHasKey('group-2', $groupedCollection->all());
+        self::assertInstanceOf(Collection::class, $groupedCollection['group-1']);
+        self::assertInstanceOf(Collection::class, $groupedCollection['group-2']);
 
         $groupedCollection = $collection->groupBy('group', false);
 
-        $this->assertArrayHasKey('group-1', $groupedCollection->all());
-        $this->assertArrayHasKey('group-2', $groupedCollection->all());
-        $this->assertInstanceOf(Collection::class, $groupedCollection['group-1']);
-        $this->assertInstanceOf(Collection::class, $groupedCollection['group-2']);
+        self::assertArrayHasKey('group-1', $groupedCollection->all());
+        self::assertArrayHasKey('group-2', $groupedCollection->all());
+        self::assertInstanceOf(Collection::class, $groupedCollection['group-1']);
+        self::assertInstanceOf(Collection::class, $groupedCollection['group-2']);
     }
 
     public function testContains()
     {
         $collection = $this->factory([1, '2', 3]);
-        $this->assertTrue($collection->contains(2));
-        $this->assertFalse($collection->contains(2, true));
-        $this->assertFalse($collection->contains(10));
-        $this->assertTrue($collection->contains(static function ($item) {
+        self::assertTrue($collection->contains(2));
+        self::assertFalse($collection->contains(2, true));
+        self::assertFalse($collection->contains(10));
+        self::assertTrue($collection->contains(static function ($item) {
             return $item === '2';
         }));
-        $this->assertFalse($collection->contains(static function ($item) {
+        self::assertFalse($collection->contains(static function ($item) {
             return $item === 2;
         }));
     }
@@ -192,11 +330,11 @@ abstract class AbstractCollectionTest extends TestCase
     public function testRemove()
     {
         $collection = $this->factory([1, '2', 3]);
-        $this->assertEquals([1, 2 => 3], $collection->remove(2)->all());
+        self::assertEquals([1, 2 => 3], $collection->remove(2)->all());
         $collection = $this->factory([1, '2', 3]);
-        $this->assertEquals([1, '2', 3], $collection->remove(2, true)->all());
+        self::assertEquals([1, '2', 3], $collection->remove(2, true)->all());
         $collection = $this->factory([1, '2', '3']);
-        $this->assertEquals([1], $collection->remove(static function ($item) {
+        self::assertEquals([1], $collection->remove(static function ($item) {
             return is_string($item);
         })->all());
     }
@@ -204,13 +342,13 @@ abstract class AbstractCollectionTest extends TestCase
     public function testFilter()
     {
         $collection = $this->factory([1, 2, 3, 4, 5, 6, 0]);
-        $this->assertEquals([1, 2, 3, 4, 5, 6], $collection->filter()->all());
+        self::assertEquals([1, 2, 3, 4, 5, 6], $collection->filter()->all());
     }
 
     public function testFilterWithCallback()
     {
         $collection = $this->factory([1, 2, 3, 4, 5, 6]);
-        $this->assertEquals([1 => 2, 3 => 4, 5 => 6], $collection->filter(static function ($item) {
+        self::assertEquals([1 => 2, 3 => 4, 5 => 6], $collection->filter(static function ($item) {
             return $item % 2 === 0;
         })->all());
     }
@@ -218,10 +356,10 @@ abstract class AbstractCollectionTest extends TestCase
     public function testFind()
     {
         $collection = $this->factory([1, 2, 3, 4, 5, 6]);
-        $this->assertEquals(2, $collection->find(static function ($item) {
+        self::assertEquals(2, $collection->find(static function ($item) {
             return $item % 2 === 0;
         }));
-        $this->assertNull($collection->find(static function ($item) {
+        self::assertNull($collection->find(static function ($item) {
             return $item === 100;
         }));
     }
@@ -229,14 +367,14 @@ abstract class AbstractCollectionTest extends TestCase
     public function testReplace()
     {
         $collection = $this->factory([1, '2', 3]);
-        $this->assertEquals([1, 5, 3], $collection->replace(2, 5)->all());
-        $this->assertNotEquals([1, 5, 3], $collection->replace(2, 5, true)->all());
+        self::assertEquals([1, 5, 3], $collection->replace(2, 5)->all());
+        self::assertNotEquals([1, 5, 3], $collection->replace(2, 5, true)->all());
     }
 
     public function testSlice()
     {
         $collection = $this->factory([1, '2', 3]);
-        $this->assertEquals([1 => '2', 2 => 3], $collection->slice(1)->all());
+        self::assertEquals([1 => '2', 2 => 3], $collection->slice(1)->all());
     }
 
     public function testMatching()
@@ -257,19 +395,19 @@ abstract class AbstractCollectionTest extends TestCase
 
         $result = $collection->matching($criteria);
 
-        $this->assertCount(25, $result);
+        self::assertCount(25, $result);
     }
 
     public function testUnique()
     {
         $collection = $this->factory([1, 2, 2, 3, 3, 3]);
-        $this->assertEquals([0 => 1, 1 => 2, 3 => 3], $collection->unique()->all());
+        self::assertEquals([0 => 1, 1 => 2, 3 => 3], $collection->unique()->all());
     }
 
     public function testImplodeStrings()
     {
         $collection = $this->factory(['hello', 'world']);
-        $this->assertEquals('hello world', $collection->implode(' '));
+        self::assertEquals('hello world', $collection->implode(' '));
     }
 
     public function testImplodeObjects()
@@ -293,7 +431,7 @@ abstract class AbstractCollectionTest extends TestCase
             $stringableFactory('hello'),
             $stringableFactory('world'),
         ]);
-        $this->assertEquals('hello world', $collection->implode(' '));
+        self::assertEquals('hello world', $collection->implode(' '));
     }
 
     public function testImplodeWihField()
@@ -314,7 +452,7 @@ abstract class AbstractCollectionTest extends TestCase
             $objectFactory('world'),
         ]);
 
-        $this->assertEquals('hello world', $collection->implode(' ', 'value'));
+        self::assertEquals('hello world', $collection->implode(' ', 'value'));
     }
 
     public function testImplodeFail()
@@ -340,61 +478,84 @@ abstract class AbstractCollectionTest extends TestCase
     public function testJoinAlias()
     {
         $collection = $this->factory(['hello', 'world']);
-        $this->assertEquals('hello world', $collection->join(' '));
+        self::assertEquals('hello world', $collection->join(' '));
     }
 
     public function testFirst()
     {
         $collection = $this->factory([1, '2', 3]);
-        $this->assertEquals(1, $collection->first());
+        self::assertEquals(1, $collection->first());
     }
 
     public function testFirstEmpty()
     {
         $collection = $this->factory();
-        $this->assertEquals(null, $collection->first());
+        self::assertEquals(null, $collection->first());
     }
 
     public function testFirstKey()
     {
         $collection = $this->factory(['one' => 1, 'two' => '2', 'three' => 3]);
-        $this->assertEquals('one', $collection->firstKey());
+        self::assertEquals('one', $collection->firstKey());
     }
 
     public function testFirstKeyEmpty()
     {
         $collection = $this->factory();
-        $this->assertEquals(null, $collection->firstKey());
+        self::assertEquals(null, $collection->firstKey());
     }
 
     public function testLast()
     {
         $collection = $this->factory([1, '2', 3]);
-        $this->assertEquals(3, $collection->last());
+        self::assertEquals(3, $collection->last());
     }
 
     public function testLastEmpty()
     {
         $collection = $this->factory();
-        $this->assertEquals(null, $collection->last());
+        self::assertEquals(null, $collection->last());
     }
 
     public function testLastKey()
     {
         $collection = $this->factory(['one' => 1, 'two' => '2', 'three' => 3]);
-        $this->assertEquals('three', $collection->lastKey());
+        self::assertEquals('three', $collection->lastKey());
     }
 
     public function testLastKeyEmpty()
     {
         $collection = $this->factory();
-        $this->assertEquals(null, $collection->lastKey());
+        self::assertEquals(null, $collection->lastKey());
+    }
+
+    public function testOffsetExists(): void
+    {
+        $collection = $this->factory(['one' => 1, 'two' => '2', 'three' => 3]);
+        self::assertTrue($collection->offsetExists('one'));
+        self::assertFalse($collection->offsetExists('four'));
+    }
+
+    public function testOffsetSet(): void
+    {
+        $collection = $this->factory();
+        $collection[] = 1;
+        $collection['two'] = 2;
+        self::assertEquals([1, 'two' => 2], $collection->all());
+    }
+
+    public function testOffsetUnset(): void
+    {
+        $collection = $this->factory(['one' => 1, 'two' => '2', 'three' => 3]);
+        self::assertTrue($collection->offsetExists('one'));
+        unset($collection['one']);
+        self::assertFalse($collection->offsetExists('one'));
     }
 
     public function testAverage()
     {
         $collection = $this->factory([1, '2', 3]);
-        $this->assertEqualsWithDelta(2, $collection->average(), 0.01);
+        self::assertEqualsWithDelta(2, $collection->average(), 0.01);
     }
 
     public function testAverageWithField()
@@ -404,13 +565,13 @@ abstract class AbstractCollectionTest extends TestCase
             ['field' => 2],
             ['field' => 3],
         ]);
-        $this->assertEqualsWithDelta(2, $collection->average('field'), 0.01);
+        self::assertEqualsWithDelta(2, $collection->average('field'), 0.01);
     }
 
     public function testAvgAlias()
     {
         $collection = $this->factory([1, '2', 3]);
-        $this->assertEqualsWithDelta(2, $collection->avg(), 0.01);
+        self::assertEqualsWithDelta(2, $collection->avg(), 0.01);
     }
 
     public function testMedian()
@@ -418,25 +579,46 @@ abstract class AbstractCollectionTest extends TestCase
         $dataSet = [12, 21, 34, 34, 44, 54, 55, 77];
         shuffle($dataSet);
         $collection = $this->factory($dataSet);
-        $this->assertEqualsWithDelta(39, $collection->median(), 0.01);
+        self::assertEqualsWithDelta(39, $collection->median(), 0.01);
+    }
+
+    public function testMedianOdd()
+    {
+        $dataSet = [12, 21, 34, 34, 54, 55, 77];
+        shuffle($dataSet);
+        $collection = $this->factory($dataSet);
+        self::assertEqualsWithDelta(34, $collection->median(), 0.01);
     }
 
     public function testMedianEmpty()
     {
         $collection = $this->factory();
-        $this->assertEquals(null, $collection->median());
+        self::assertEquals(null, $collection->median());
+    }
+
+    public function testMedianException()
+    {
+        $this->expectException(BadMethodCallException::class);
+        $collection = $this->factory(['a', 'b', 'c']);
+        $collection->median();
+    }
+
+    public function testJsonSerialize()
+    {
+        $collection = $this->factory(['a', 'b', 'c']);
+        self::assertJson(json_encode($collection));
     }
 
     public function testToJson()
     {
         $collection = $this->factory([1, '2', 3]);
-        $this->assertJson($collection->toJson());
+        self::assertJson($collection->toJson());
     }
 
     public function testStringify()
     {
         $collection = $this->factory([1, '2', 3]);
-        $this->assertJson((string)$collection);
+        self::assertJson((string)$collection);
     }
 
     public function testCallUndefinedMethod()
