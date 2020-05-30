@@ -4,11 +4,35 @@ declare(strict_types=1);
 
 namespace spaceonfire\Collection;
 
+use ArrayAccess;
 use Closure;
 use InvalidArgumentException;
+use Webmozart\Assert\Assert;
 
 class ArrayHelper
 {
+    /**
+     * Check that array is associative (have at least one string key)
+     * @param mixed $var variable to check
+     * @return bool
+     */
+    public static function isArrayAssoc($var): bool
+    {
+        if (!is_array($var)) {
+            return false;
+        }
+
+        $i = 0;
+        foreach ($var as $k => $_) {
+            if ('' . $k !== '' . $i) {
+                return true;
+            }
+            $i++;
+        }
+
+        return false;
+    }
+
     /**
      * Convert a multi-dimensional array into a single-dimensional array
      * @param array $array Source multi-dimensional array
@@ -35,28 +59,6 @@ class ArrayHelper
     }
 
     /**
-     * Check that array is associative (have at least one string key)
-     * @param mixed $var variable to check
-     * @return bool
-     */
-    public static function isArrayAssoc($var): bool
-    {
-        if (!is_array($var)) {
-            return false;
-        }
-
-        $i = 0;
-        foreach ($var as $k => $_) {
-            if ('' . $k !== '' . $i) {
-                return true;
-            }
-            $i++;
-        }
-
-        return false;
-    }
-
-    /**
      * Convert single-dimensional associative array to multi-dimensional by splitting keys with separator
      * @param array $array Source single-dimensional array
      * @param string $separator Glue string for exploding keys
@@ -64,22 +66,27 @@ class ArrayHelper
      */
     public static function unflatten(array $array, string $separator = '.'): array
     {
-        /** @var string[] $nestedKeys */
-        $nestedKeys = array_filter(array_keys($array), static function ($key) use ($separator) {
-            return strpos((string)$key, $separator) !== false;
-        });
-        if (!count($nestedKeys)) {
-            return $array;
+        Assert::notEmpty($separator);
+        $result = [];
+
+        foreach ($array as $key => $value) {
+            /** @var string[] $keysChain */
+            $keysChain = explode($separator, (string)$key);
+            /** @var array $subArray */
+            $subArray = &$result;
+            while (count($keysChain) > 1) {
+                /** @var string $subKey */
+                $subKey = array_shift($keysChain);
+                if (!isset($subArray[$subKey])) {
+                    $subArray[$subKey] = [];
+                }
+                $subArray = &$subArray[$subKey];
+            }
+            $subKey = array_shift($keysChain);
+            $subArray[$subKey] = $value;
         }
-        foreach ($nestedKeys as $key) {
-            /** @var string[] $prefix */
-            $prefix = explode($separator, $key);
-            $field = array_pop($prefix);
-            $prefix = implode($separator, $prefix);
-            $array[$prefix][$field] = $array[$key];
-            unset($array[$key]);
-        }
-        return self::unflatten($array, $separator);
+
+        return $result;
     }
 
     /**
@@ -89,12 +96,9 @@ class ArrayHelper
      */
     public static function merge(...$arrays): array
     {
-        foreach ($arrays as $array) {
-            if (!is_array($array)) {
-                throw new InvalidArgumentException('');
-            }
-        }
+        Assert::allIsArray($arrays);
 
+        /** @var array $ret */
         $ret = array_shift($arrays);
 
         while (!empty($arrays)) {
@@ -304,19 +308,27 @@ class ArrayHelper
             return $array[$key];
         }
 
-        if (($pos = strrpos($key, '.')) !== false) {
+        if ($array instanceof ArrayAccess && (isset($array[$key]) || $array->offsetExists($key))) {
+            return $array[$key];
+        }
+
+        if (false !== $pos = strrpos($key, '.')) {
             $array = static::getValue($array, substr($key, 0, $pos), $default);
             $key = substr($key, $pos + 1);
+        }
+
+        if (is_array($array)) {
+            return isset($array[$key]) || array_key_exists($key, $array) ? $array[$key] : $default;
+        }
+
+        if ($array instanceof ArrayAccess) {
+            return isset($array[$key]) || $array->offsetExists($key) ? $array[$key] : $default;
         }
 
         if (is_object($array)) {
             // this is expected to fail if the property does not exist, or __get() is not implemented
             // it is not reliably possible to check whether a property is accessible beforehand
             return $array->$key;
-        }
-
-        if (is_array($array)) {
-            return isset($array[$key]) || array_key_exists($key, $array) ? $array[$key] : $default;
         }
 
         return $default;
