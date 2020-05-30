@@ -11,10 +11,22 @@ use IteratorAggregate;
 use JsonSerializable;
 use spaceonfire\Criteria\FilterableInterface;
 
+/**
+ * Interface CollectionInterface
+ * @package spaceonfire\Collection
+ *
+ * @method string join(string|null $glue = null, $field = null) alias to implode()
+ * @method int|float avg($field = null) alias to average()
+ */
 interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate, JsonSerializable, FilterableInterface
 {
+    public const ALIASES = [
+        'join' => 'implode',
+        'avg' => 'average',
+    ];
+
     /**
-     * Get all of the items in the collection.
+     * Get all items from the collection as array.
      * @return array
      */
     public function all(): array;
@@ -224,32 +236,32 @@ interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate,
 
     /**
      * Check whether the collection contains a specific item.
-     * @param mixed|Closure $item the item to search for. You may also pass a closure that returns
-     *     a boolean. The closure will be called on each item and in case it returns `true`, the
-     *     item will be considered to be found.
-     * @return bool `true` if the collection contains at least one item that matches, `false` if
-     *     not.
+     * @param mixed|Closure $item the item to search for. You may also pass a closure that returns a boolean. The
+     *     closure will be called on each item and in case it returns `true`, the item will be considered to be found.
+     * @param bool $strict whether comparison should be compared strict (`===`) or not (`==`). Defaults to `false`.
+     * @return bool `true` if the collection contains at least one item that matches, `false` if not.
      */
-    public function contains($item): bool;
+    public function contains($item, bool $strict = false): bool;
 
     /**
      * Remove a specific item from the collection.
-     * @param mixed|Closure $item the item to search for. You may also pass a closure that returns
-     *     a boolean. The closure will be called on each item and in case it returns `true`, the
-     *     item will be removed.
+     * @param mixed|Closure $item the item to search for. You may also pass a closure that returns a boolean. The
+     *     closure will be called on each item and in case it returns `true`, the item will be removed.
+     * @param bool $strict whether comparison should be compared strict (`===`) or not (`==`). Defaults to `false`.
      * @return CollectionInterface
      * @see filter()
      */
-    public function remove($item);
+    public function remove($item, bool $strict = false);
 
     /**
      * Replace a specific item in the collection with another one.
      * @param mixed $item the item to search for.
      * @param mixed $replacement the replacement to insert instead of the item.
+     * @param bool $strict whether comparison should be compared strict (`===`) or not (`==`). Defaults to `false`.
      * @return CollectionInterface
      * @see map()
      */
-    public function replace($item, $replacement);
+    public function replace($item, $replacement, bool $strict = false);
 
     /**
      * Slice the set of elements by an offset and number of items to return.
@@ -298,4 +310,17 @@ interface CollectionInterface extends ArrayAccess, Countable, IteratorAggregate,
      * @return mixed
      */
     public function lastKey();
+
+    /**
+     * Get the collection of items as JSON.
+     * @param int $options
+     * @return string
+     */
+    public function toJson(int $options = 0): string;
+
+    /**
+     * Convert the collection to its string representation.
+     * @return string
+     */
+    public function __toString(): string;
 }

@@ -24,6 +24,8 @@ use Traversable;
  */
 abstract class BaseCollection implements CollectionInterface
 {
+    use CollectionAliasesTrait;
+
     /**
      * @var array The items contained in the collection.
      */
@@ -31,7 +33,7 @@ abstract class BaseCollection implements CollectionInterface
 
     /**
      * BaseCollection constructor.
-     * @param array $items
+     * @param array|iterable|mixed $items
      */
     public function __construct($items = [])
     {
@@ -67,7 +69,7 @@ abstract class BaseCollection implements CollectionInterface
     /**
      * Creates new instance of collection
      * @param array $items
-     * @return CollectionInterface
+     * @return static
      */
     protected function newStatic(array $items = []): CollectionInterface
     {
@@ -387,17 +389,9 @@ abstract class BaseCollection implements CollectionInterface
     }
 
     /**
-     * Check whether the collection contains a specific item.
-     * @param mixed|Closure $item the item to search for. You may also pass a closure that returns
-     *     a boolean. The closure will be called on each item and in case it returns `true`, the
-     *     item will be considered to be found. In case a closure is passed, `$strict` parameter
-     *     has no effect.
-     * @param bool $strict whether comparison should be compared strict (`===`) or not (`==`).
-     * Defaults to `false`.
-     * @return bool `true` if the collection contains at least one item that matches, `false` if
-     *     not.
+     * {@inheritDoc}
      */
-    public function contains($item, $strict = false): bool
+    public function contains($item, bool $strict = false): bool
     {
         if ($item instanceof Closure) {
             $test = $item;
@@ -418,19 +412,11 @@ abstract class BaseCollection implements CollectionInterface
     }
 
     /**
-     * Remove a specific item from the collection.
+     * {@inheritDoc}
      *
-     * The original collection will not be changed, a new collection with modified data is
-     * returned.
-     * @param mixed|Closure $item the item to search for. You may also pass a closure that returns
-     *     a boolean. The closure will be called on each item and in case it returns `true`, the
-     *     item will be removed. In case a closure is passed, `$strict` parameter has no effect.
-     * @param bool $strict whether comparison should be compared strict (`===`) or not (`==`).
-     * Defaults to `false`.
-     * @return CollectionInterface a new collection containing the filtered items.
-     * @see filter()
+     * The original collection will not be changed, a new collection with modified data is returned.
      */
-    public function remove($item, $strict = false)
+    public function remove($item, bool $strict = false)
     {
         if ($item instanceof Closure) {
             $fun = static function ($i) use ($item) {
@@ -479,11 +465,9 @@ abstract class BaseCollection implements CollectionInterface
 
     /**
      * {@inheritDoc}
-     * @param bool $strict whether comparison should be compared strict (`===`) or not (`==`).
-     * Defaults to `false`.
      * The original collection will not be changed, a new collection will be returned instead.
      */
-    public function replace($item, $replacement, $strict = false)
+    public function replace($item, $replacement, bool $strict = false)
     {
         return $this->map(static function ($i) use ($item, $replacement, $strict) {
             /** @noinspection TypeUnsafeComparisonInspection */
@@ -639,31 +623,30 @@ abstract class BaseCollection implements CollectionInterface
     }
 
     /**
-     * Convert the collection to its string representation.
-     * @return string
+     * {@inheritDoc}
      */
-    public function __toString()
-    {
-        return $this->toJson();
-    }
-
-    /**
-     * Get the collection of items as JSON.
-     * @param int $options
-     * @return string
-     */
-    public function toJson($options = 0): string
+    public function toJson(int $options = 0): string
     {
         $json = json_encode($this->jsonSerialize(), $options);
 
         if ($json === false) {
+            // @codeCoverageIgnoreStart
             throw new RuntimeException(
                 'Error while encoding collection to JSON: ' . json_last_error_msg(),
                 json_last_error()
             );
+            // @codeCoverageIgnoreEnd
         }
 
         return $json;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function __toString(): string
+    {
+        return $this->toJson();
     }
 
     /**
@@ -673,25 +656,5 @@ abstract class BaseCollection implements CollectionInterface
     public function jsonSerialize()
     {
         return $this->all();
-    }
-
-    /**
-     * Magic methods call
-     * @param string $name
-     * @param mixed[] $arguments
-     * @return mixed
-     */
-    public function __call(string $name, array $arguments = [])
-    {
-        $aliases = [
-            'join' => 'implode',
-            'avg' => 'average',
-        ];
-
-        if (isset($aliases[$name])) {
-            return call_user_func_array([$this, $aliases[$name]], $arguments);
-        }
-
-        throw new BadMethodCallException('Call to undefined method ' . static::class . '::' . $name . '()');
     }
 }

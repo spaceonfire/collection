@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace spaceonfire\Collection;
 
-class CollectionTest extends AbstractCollectionTest
+class AbstractCollectionDecoratorTest extends AbstractCollectionTest
 {
     protected function factory($items = []): CollectionInterface
     {
-        return new Collection($items);
+        return new class($items) extends AbstractCollectionDecorator {
+        };
     }
 }
